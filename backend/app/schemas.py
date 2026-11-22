@@ -29,3 +29,25 @@ class EntryPayload(BaseModel):
 class ActionPayload(BaseModel):
     action: str
     remark: str | None = None
+
+
+class MaintenanceAppendPayload(BaseModel):
+    targetTable: str
+    dataFiles: list[str] = Field(default_factory=list)
+    rowCount: int | None = None
+
+
+class MaintenanceViewPayload(BaseModel):
+    targetTable: str
+    snapshotId: int | None = None
+
+
+class MaintenancePlanPayload(BaseModel):
+    objectIds: list[int] | None = None
+    batchSize: int | None = None
+
+
+class MaintenanceSubmitPayload(BaseModel):
+    planId: int | None = None
+    jobId: str | None = None
+    batchSize: int | None = None

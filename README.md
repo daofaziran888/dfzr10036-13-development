@@ -73,6 +73,45 @@ npm run dev
 | 流审计 | `stream_audit` | 审计记录 | 记录编号、数据流、操作类型 |
 | 健康报告 | `stream_health` | 健康评估 | 评估编号、数据流、健康分数 |
 
+## 快照维护数据视图
+
+湖仓提交只记录"提交了哪些文件"，不记录"哪些文件现在还能被合并维护"。  
+`backend/app/services/snapshot_maintenance.py` 在已提交快照之上提供一层维护视图：
+
+- 打开视图时冻结当时可见的已提交快照，每个数据文件只列一次，并带上
+  **基准快照**（文件第一次出现的快照）和来源快照；待处理文件一定能追溯回
+  当时存在的快照。
+- 同一张表的后续快照可以共用旧文件；视图打开后再提交的同表快照只会进入
+  新视图，并以 `newSnapshotsSinceOpen` / `newFilesSinceOpen` 单独标注，
+  不会混进旧视图或旧计划的已确认范围。
+- 确认维护范围后范围冻结：即使数据文件条件变化，`GET /plans/{id}` 仍能查到
+  原确认范围和已替换范围；续做只消费确认范围，后来追加的文件不会被算作
+  "已替换"。
+- 数据文件的写入占用全局唯一：两个合并作业同时提交时只有一方拿到有效占用，
+  另一方拿到 `conflicts`。写入占用和替换记录都在
+  `GET /views/{id}?candidate_only=true` 的候选里逐条体现。
+- 提交维护时用视图里的已确认对象建立合并任务（`compaction` 模块），任务同时
+  记录「试图替换路径」「真实生效路径」「未生效路径」，可直接核对哪些路径没生效。
+- `GET /plans/compare?left=&right=` 对照两份计划：共有/各自独有的确认范围、
+  已替换范围、仍可治理范围，以及各自视角下后来追加的文件。
+
+接口（同时支持 `/api/snapshot-maintenance` 与 `/api/snapshot_maintenance` 前缀）：
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| GET | `/tables` | 可维护的目标表、快照与候选数量 |
+| POST | `/views` | 打开视图，`{targetTable, snapshotId?}` |
+| GET | `/views/{id}` | 读取视图，`?candidate_only=true` 只返回候选 |
+| GET | `/views/{id}/candidates` | 可交给合并的候选，逐条带基准快照 |
+| POST | `/views/{id}/plans` | 确认维护范围，`{objectIds?, batchSize?}` |
+| POST | `/views/{id}/submit` | 提交一批，`{planId?, jobId?, batchSize?}` |
+| POST | `/snapshots` | 追加一份同表已提交快照，复现实时写入 |
+| GET | `/plans?table=` | 计划列表 |
+| GET | `/plans/{id}` | 计划详情：已确认/已替换/剩余/仍可治理/后来追加 |
+| GET | `/plans/compare?left=&right=` | 两份计划的范围对照 |
+
+前端工作台在「快照维护视图」页（`/snapshot-maintenance`）操作同一套接口。
+
 ## 约定
 
 - 全部模块共享`frontend/src/views/WorkbenchView.vue|tsx`和一套资源路由。

@@ -197,6 +197,45 @@ SEED_ROWS: dict[str, list[dict[str, Any]]] = {
             "提交状态": "CONFLICT", "影响行数": 0,
             "提交时间": "2026-11-18 10:31:00",
         },
+        # 同一张表连续提交的已提交快照：IC-0003 复用 IC-0001 的 part-00001，
+        # IC-0004 又复用 IC-0003 的 part-00002。快照维护视图按文件首次出现的
+        # 快照记录“基准快照”，同一文件只列一次。
+        {
+            "id": 3, "status": "已提交", "pending": False, "abnormal": False,
+            "快照编号": "IC-0003", "目标表": "ads.order_events_iceberg",
+            "数据文件": (
+                "s3://warehouse/ads/order_events/data/part-00001.parquet,"
+                "s3://warehouse/ads/order_events/data/part-00002.parquet"
+            ),
+            "清单文件": "metadata/manifest-1003.avro",
+            "快照ID": "9182736450123456790",
+            "提交状态": "COMMITTED", "影响行数": 64210,
+            "提交时间": "2026-11-18 10:34:10",
+        },
+        {
+            "id": 4, "status": "已提交", "pending": False, "abnormal": False,
+            "快照编号": "IC-0004", "目标表": "ads.order_events_iceberg",
+            "数据文件": (
+                "s3://warehouse/ads/order_events/data/part-00002.parquet,"
+                "s3://warehouse/ads/order_events/data/part-00003.parquet"
+            ),
+            "清单文件": "metadata/manifest-1004.avro",
+            "快照ID": "9182736450123456791",
+            "提交状态": "COMMITTED", "影响行数": 38190,
+            "提交时间": "2026-11-18 10:36:00",
+        },
+        {
+            "id": 5, "status": "已提交", "pending": False, "abnormal": False,
+            "快照编号": "IC-0005", "目标表": "ods.payment_log_iceberg",
+            "数据文件": (
+                "s3://warehouse/ods/payment_log/data/part-00015.parquet,"
+                "s3://warehouse/ods/payment_log/data/part-00016.parquet"
+            ),
+            "清单文件": "metadata/manifest-2006.avro",
+            "快照ID": "9182736450123456792",
+            "提交状态": "COMMITTED", "影响行数": 20480,
+            "提交时间": "2026-11-18 10:37:00",
+        },
     ],
     "compaction": [
         {
